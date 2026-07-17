@@ -40,20 +40,35 @@ function getPool() {
 
 export function initAuth(): Promise<void> {
   if (initPromise) return initPromise;
-  initPromise = new Promise<void>((resolve) => {
-    const pool = getPool();
-    const storage = (pool as any).storage;
-    if (storage && typeof storage.sync === "function") {
-      storage.sync((err: any) => {
-        if (err) {
-          console.warn("Failed to sync Cognito storage from AsyncStorage:", err);
-        }
+  
+  const syncPromise = new Promise<void>((resolve) => {
+    try {
+      const pool = getPool();
+      const storage = (pool as any).storage;
+      if (storage && typeof storage.sync === "function") {
+        storage.sync((err: any) => {
+          if (err) {
+            console.warn("Failed to sync Cognito storage:", err);
+          }
+          resolve();
+        });
+      } else {
         resolve();
-      });
-    } else {
+      }
+    } catch (e) {
+      console.warn("Failed to initialize Cognito pool in initAuth:", e);
       resolve();
     }
   });
+
+  const timeoutPromise = new Promise<void>((resolve) => {
+    setTimeout(() => {
+      console.warn("Cognito storage sync timed out after 1500ms");
+      resolve();
+    }, 1500);
+  });
+
+  initPromise = Promise.race([syncPromise, timeoutPromise]);
   return initPromise;
 }
 

@@ -31,25 +31,47 @@ export function LoginScreen({ navigation }: Props) {
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
+    let active = true;
+    let didTimeout = false;
+
     async function checkAutoLogin() {
+      // Start a 3-second timer to fallback to login UI if check hangs (e.g. offline Cognito)
+      const timer = setTimeout(() => {
+        if (active) {
+          console.warn("Auto-login check timed out after 3000ms");
+          didTimeout = true;
+          setCheckingAuth(false);
+        }
+      }, 3000);
+
       try {
         await initAuth();
         const identity = await getLocalIdentity();
         if (identity && identity.userId) {
           const userId = await getCurrentUserId();
           if (userId === identity.userId) {
-            registerPushToken(userId); // Register push token on auto-login
-            navigation.replace("Main");
-            return;
+            clearTimeout(timer);
+            if (active && !didTimeout) {
+              registerPushToken(userId); // Register push token on auto-login
+              navigation.replace("Main");
+              return;
+            }
           }
         }
       } catch (err) {
-        // No cached session or expired, stay on login screen
+        console.log("Auto-login check failed:", err);
       } finally {
-        setCheckingAuth(false);
+        clearTimeout(timer);
+        if (active) {
+          setCheckingAuth(false);
+        }
       }
     }
     checkAutoLogin();
+
+    return () => {
+      active = false;
+    };
   }, [navigation]);
 
   if (checkingAuth) {
