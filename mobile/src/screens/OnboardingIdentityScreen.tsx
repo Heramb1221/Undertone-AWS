@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TextInput } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeContext";
 import { spacing, typography } from "../theme/theme";
 import { Button } from "../components/Button";
@@ -49,7 +50,7 @@ export function OnboardingIdentityScreen({ route, navigation }: Props) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgBase }]} edges={["top", "bottom", "left", "right"]}>
       <Text style={[styles.title, { color: colors.textPrimary }]}>This is you here</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         Nobody sees your real name. Reroll or edit until it feels right.
@@ -71,7 +72,7 @@ export function OnboardingIdentityScreen({ route, navigation }: Props) {
         <Button title="Reroll" variant="secondary" onPress={reroll} />
         <Button title={submitting ? "Saving…" : "This is me"} variant="primary" onPress={confirm} loading={submitting} />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

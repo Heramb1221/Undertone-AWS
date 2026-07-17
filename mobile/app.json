@@ -25,6 +25,15 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#1C1815"
+        }
+      ]
+    ],
     "extra": {
       "cognitoUserPoolId": "ap-south-1_eaJqFDMbi",
       "cognitoClientId": "5gni8vpv8c2sqtb8ha1ak29rog",

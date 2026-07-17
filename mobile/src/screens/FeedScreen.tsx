@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, FlatList, RefreshControl, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { spacing, typography } from "../theme/theme";
@@ -39,7 +40,7 @@ export function FeedScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgBase }]} edges={["top", "left", "right"]}>
       <View style={styles.headerRow}>
         <Text style={[styles.header, { color: colors.textPrimary }]}>Your feed</Text>
         <Pressable onPress={toggleTheme} style={[styles.themeBtn, { borderColor: colors.borderSubtle }]}>
@@ -71,7 +72,7 @@ export function FeedScreen() {
         renderItem={({ item }) => <PostCard post={item} />}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textSecondary} />}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

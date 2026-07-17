@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { spacing, typography } from "../theme/theme";
@@ -39,7 +40,7 @@ export function ExploreCirclesScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgBase }]} edges={["top", "left", "right"]}>
       <View style={styles.headerRow}>
         <Text style={[styles.header, { color: colors.textPrimary }]}>Explore Circles</Text>
         <Button title="Create" variant="primary" onPress={() => navigation.navigate("CreateCircle")} />
@@ -70,7 +71,7 @@ export function ExploreCirclesScreen({ navigation }: Props) {
           </Pressable>
         )}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

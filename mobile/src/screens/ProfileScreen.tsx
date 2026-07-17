@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, FlatList } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { spacing, typography } from "../theme/theme";
@@ -48,18 +49,19 @@ export function ProfileScreen() {
 
   if (error) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.bgBase }]}>
+      <SafeAreaView style={[styles.center, { backgroundColor: colors.bgBase }]} edges={["top", "left", "right"]}>
         <Text style={{ color: colors.accentDanger }}>{error}</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (!profile) {
-    return <View style={[styles.center, { backgroundColor: colors.bgBase }]} />;
+    return <SafeAreaView style={[styles.center, { backgroundColor: colors.bgBase }]} edges={["top", "left", "right"]} />;
   }
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bgBase }} contentContainerStyle={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgBase }} edges={["top", "left", "right"]}>
+      <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <Avatar seed={profile.anonymous_name} size={56} />
         <View>
@@ -105,7 +107,8 @@ export function ProfileScreen() {
         <Button title="Sign out" variant="danger" onPress={handleSignOut} />
       </View>
     </ScrollView>
-  );
+  </SafeAreaView>
+);
 }
 
 const styles = StyleSheet.create({

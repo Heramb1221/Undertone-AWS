@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeContext";
 import { spacing, typography, radius } from "../theme/theme";
 import { Button } from "../components/Button";
@@ -34,7 +35,8 @@ export function OnboardingInterestsScreen({ navigation }: Props) {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bgBase }} contentContainerStyle={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgBase }} edges={["top", "bottom", "left", "right"]}>
+      <ScrollView contentContainerStyle={styles.container}>
       <Text style={[styles.title, { color: colors.textPrimary }]}>What are you into?</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         Pick a few. Your anonymous name comes from these — pick none and we&apos;ll surprise you.
@@ -70,6 +72,7 @@ export function OnboardingInterestsScreen({ navigation }: Props) {
 
       <Button title={loading ? "…" : "Continue"} variant="primary" onPress={handleContinue} loading={loading} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

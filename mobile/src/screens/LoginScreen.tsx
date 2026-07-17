@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { useTheme } from "../theme/ThemeContext";
 import { spacing, typography } from "../theme/theme";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
-import { signIn, getCurrentUserId } from "../lib/cognito";
+import { signIn, getCurrentUserId, initAuth } from "../lib/cognito";
 import { api } from "../lib/api";
 import { saveLocalIdentity, getLocalIdentity } from "../lib/localIdentity";
 import { registerForPushNotificationsAsync } from "../lib/pushNotifications";
@@ -28,23 +28,37 @@ export function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
     async function checkAutoLogin() {
       try {
+        await initAuth();
         const identity = await getLocalIdentity();
         if (identity && identity.userId) {
           const userId = await getCurrentUserId();
           if (userId === identity.userId) {
+            registerPushToken(userId); // Register push token on auto-login
             navigation.replace("Main");
+            return;
           }
         }
-      } catch {
+      } catch (err) {
         // No cached session or expired, stay on login screen
+      } finally {
+        setCheckingAuth(false);
       }
     }
     checkAutoLogin();
   }, [navigation]);
+
+  if (checkingAuth) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.bgBase, justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={colors.textPrimary} />
+      </View>
+    );
+  }
 
   async function handleLogin() {
     setError(null);

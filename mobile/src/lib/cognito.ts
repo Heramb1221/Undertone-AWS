@@ -18,7 +18,12 @@ import {
 } from "amazon-cognito-identity-js";
 import Constants from "expo-constants";
 
+let poolInstance: CognitoUserPool | null = null;
+let initPromise: Promise<void> | null = null;
+
 function getPool() {
+  if (poolInstance) return poolInstance;
+
   const UserPoolId = Constants.expoConfig?.extra?.cognitoUserPoolId as string | undefined;
   const ClientId = Constants.expoConfig?.extra?.cognitoClientId as string | undefined;
 
@@ -29,7 +34,27 @@ function getPool() {
     );
   }
 
-  return new CognitoUserPool({ UserPoolId, ClientId });
+  poolInstance = new CognitoUserPool({ UserPoolId, ClientId });
+  return poolInstance;
+}
+
+export function initAuth(): Promise<void> {
+  if (initPromise) return initPromise;
+  initPromise = new Promise<void>((resolve) => {
+    const pool = getPool();
+    const storage = (pool as any).storage;
+    if (storage && typeof storage.sync === "function") {
+      storage.sync((err: any) => {
+        if (err) {
+          console.warn("Failed to sync Cognito storage from AsyncStorage:", err);
+        }
+        resolve();
+      });
+    } else {
+      resolve();
+    }
+  });
+  return initPromise;
 }
 
 export function signUp(email: string, password: string): Promise<CognitoUser> {

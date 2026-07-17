@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, FlatList, Pressable, StyleSheet, TextInput, ActivityIndicator } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { spacing, typography, radius } from "../theme/theme";
@@ -116,7 +117,7 @@ export function DmInboxScreen({ navigation }: Props) {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgBase }]} edges={["top", "left", "right"]}>
       <FlatList
         data={conversations ?? []}
         keyExtractor={(c) => c.conversation_id}
@@ -144,7 +145,7 @@ export function DmInboxScreen({ navigation }: Props) {
           );
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

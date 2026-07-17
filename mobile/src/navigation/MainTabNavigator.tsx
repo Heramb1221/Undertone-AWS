@@ -20,7 +20,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 // lucide-react-native) without touching navigation structure. Kept minimal
 // since this sandbox can't visually verify icon rendering anyway.
 function TabIcon({ glyph, color }: { glyph: string; color: string }) {
-  return <Text style={{ color, fontSize: 18 }}>{glyph}</Text>;
+  return <Text style={{ color, fontSize: 24 }}>{glyph}</Text>;
 }
 
 export function MainTabNavigator() {
