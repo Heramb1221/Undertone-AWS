@@ -1,0 +1,69 @@
+# Kubernetes equivalent of the ECS task definition + service in
+# infra/scripts/manage.py::create_ecs_service(). This is a DOCUMENTED
+# TRANSLATION LAYER, not a live deployment — EKS has no free tier (hourly
+# control-plane charge regardless of usage), so this project runs on ECS/Fargate
+# instead (see docs/Architecture.md section 5, decided in Phase 11).
+#
+# What this maps to, concept for concept:
+#   ECS cluster            -> Kubernetes namespace (implicit "default" here)
+#   ECS task definition     -> Pod template (the `spec.template` section below)
+#   ECS service             -> Deployment (this file) + Service (service.yaml)
+#   Fargate CPU/memory       -> resources.requests/limits (same 0.25 vCPU / 0.5GB)
+#   ECS task execution role  -> a Kubernetes ServiceAccount + IRSA (IAM Roles for
+#                                Service Accounts) binding, not shown here since
+#                                it's EKS-specific setup with no ECS equivalent
+#                                to translate FROM
+#   CloudWatch awslogs driver -> stdout/stderr, collected by a cluster-level
+#                                log aggregator (e.g. Fluent Bit) — not
+#                                container-level config in k8s
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: undertone-backend
+  labels:
+    app: undertone-backend
+spec:
+  replicas: 1 # matches ECS desiredCount: 1
+  selector:
+    matchLabels:
+      app: undertone-backend
+  template:
+    metadata:
+      labels:
+        app: undertone-backend
+    spec:
+      containers:
+        - name: undertone-backend
+          image: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/undertone-backend:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: AWS_REGION
+              value: ap-south-1
+            - name: UNDERTONE_TABLE
+              value: Undertone
+            - name: UNDERTONE_BUCKET
+              value: undertone-media
+          resources:
+            # Same sizing as the Fargate task (infra/free-tier-limits.md's cost
+            # discipline) — k8s uses fractional CPU cores (250m = 0.25 vCPU) and
+            # binary-suffixed memory (512Mi ≈ Fargate's 0.5 GB) rather than ECS's
+            # separate cpu/memory unit strings.
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "250m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20

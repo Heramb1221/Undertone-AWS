@@ -1,0 +1,21 @@
+# Kubernetes equivalent of ECS's awsvpc networking + assignPublicIp: ENABLED
+# (see deployment.yaml's header comment for the full ECS-to-k8s concept map).
+#
+# In the real ECS setup, the Fargate task gets a public IP directly (no load
+# balancer, to avoid ALB's hourly charge — see manage.py::create_ecs_service's
+# docstring for that cost trade-off). The direct equivalent here would be a
+# NodePort or a cloud LoadBalancer Service; a ClusterIP + Ingress is shown
+# instead because it's the more realistic "if this were actually production"
+# pattern — worth knowing both, but this file documents the better long-term
+# shape, not a literal 1:1 mirror of the free-tier-constrained ECS setup.
+apiVersion: v1
+kind: Service
+metadata:
+  name: undertone-backend
+spec:
+  selector:
+    app: undertone-backend
+  ports:
+    - port: 80
+      targetPort: 5000
+  type: ClusterIP

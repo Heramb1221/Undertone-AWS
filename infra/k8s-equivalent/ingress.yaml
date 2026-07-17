@@ -1,0 +1,24 @@
+# The "if this were actually production" piece with no ECS equivalent at all —
+# the free-tier ECS setup exposes the backend directly via a task's public IP,
+# with no path-based routing, TLS termination, or custom domain. An Ingress is
+# what you'd add on the k8s side (or an ALB + Route53 on the ECS side, deferred
+# for the same free-tier cost reason documented in manage.py) to get a stable
+# domain and HTTPS instead of a raw IP that changes on every redeploy.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: undertone-backend
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: api.undertone.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: undertone-backend
+                port:
+                  number: 80

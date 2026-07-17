@@ -1,0 +1,81 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [main]
+    paths: ["mobile/**", ".github/workflows/mobile.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["mobile/**"]
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Verify Metro bundle
+        # Same check used manually throughout Phases 14-18 (see README.md) —
+        # confirms every import resolves and the JS bundle is genuinely buildable,
+        # not just type-correct in isolation.
+        run: npx expo export --platform android
+
+  build-apk:
+    # No EAS account needed — builds directly via Gradle in the runner, using
+    # `expo prebuild` to generate the native Android project. Produces a debug
+    # APK (self-signed automatically, installs fine for manual testing) rather
+    # than a release build, which would need real signing credentials as a
+    # secret — out of scope for "attach as artifact for manual testing."
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prebuild native Android project
+        env:
+          CI: 1
+        run: npx expo prebuild --platform android
+
+      - name: Build debug APK
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: undertone-debug-apk
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14

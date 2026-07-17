@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap");
+
+:root {
+  /* Dark theme is default per Design.md — these are the CSS var fallbacks
+     for anything not covered by Tailwind's static color tokens above. */
+  --bg-base: #1c1815;
+  --bg-surface: #241f1b;
+  --bg-elevated: #2e2822;
+  --border-subtle: #3a332c;
+  --text-primary: #f2e9de;
+  --text-secondary: #b8ac9c;
+  --accent-primary: #d98e5b;
+  --accent-secondary: #8aa68a;
+  --accent-pass: #6e6259;
+  --accent-danger: #cc6656; /* was #c1594b — failed WCAG AA for normal text (4.03:1) against bg-base, fixed to 4.7:1 in Phase 13's contrast audit */
+  --token-gold: #c9a24b;
+}
+
+.light {
+  /* Colour.md section 2 — cream paper, not clinical white */
+  --bg-base: #fbf6ef;
+  --bg-surface: #f3ece1;
+  --bg-elevated: #ffffff;
+  --border-subtle: #e3d8c8;
+  --text-primary: #2b241d;
+  --text-secondary: #6e6259;
+  --accent-primary: #c97a45;
+  --accent-secondary: #5f7d5f;
+  --accent-pass: #8c8171;
+  --accent-danger: #a8402f;
+  --token-gold: #a9812e;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* Design.md section 8 — respect prefers-reduced-motion. Most of the app has no
+   motion beyond color transitions, but this is a global guard for anything added
+   later (and for the .hover:opacity-90 / transition-colors utilities already in use). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

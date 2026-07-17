@@ -1,0 +1,24 @@
+# Autoscaling has no ECS equivalent configured in this project at all — ECS
+# Service Auto Scaling exists and could be added, but wasn't, specifically
+# because free-tier discipline means desiredCount stays pinned at 1 (see
+# manage.py's repeated "keep desiredCount at 1" cost warnings). This file
+# exists to show the k8s-native mechanism for the "if this needed to actually
+# scale" conversation, not because the current setup scales.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: undertone-backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: undertone-backend
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
