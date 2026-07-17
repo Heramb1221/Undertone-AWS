@@ -8,7 +8,7 @@ import { api, Post } from "../lib/api";
 import { getLocalIdentity } from "../lib/localIdentity";
 
 export function FeedScreen() {
-  const { colors } = useTheme();
+  const { colors, toggleTheme, isDark } = useTheme();
   const navigation = useNavigation<any>();
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +40,14 @@ export function FeedScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
-      <Text style={[styles.header, { color: colors.textPrimary }]}>Your feed</Text>
+      <View style={styles.headerRow}>
+        <Text style={[styles.header, { color: colors.textPrimary }]}>Your feed</Text>
+        <Pressable onPress={toggleTheme} style={[styles.themeBtn, { borderColor: colors.borderSubtle }]}>
+          <Text style={{ color: colors.textPrimary, fontSize: typography.xs }}>
+            {isDark ? "Light Mode" : "Dark Mode"}
+          </Text>
+        </Pressable>
+      </View>
 
       {error && <Text style={{ color: colors.accentDanger, paddingHorizontal: spacing.lg }}>{error}</Text>}
 
@@ -72,4 +79,16 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { fontSize: typography.xl, fontWeight: "600", padding: spacing.lg, paddingBottom: spacing.sm },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingRight: spacing.lg,
+  },
+  themeBtn: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
 });
