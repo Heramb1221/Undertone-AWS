@@ -1,0 +1,193 @@
+# AWS Services & GitHub Actions Integration Guide
+
+This document details the cloud architecture, serverless pipelines, and CI/CD automation built into **Undertone**. It serves as an engineering overview of the system's integration points, architectural decisions, and security patterns.
+
+---
+
+## 1. System Architecture Overview
+
+Undertone utilizes a containerized backend API, a serverless real-time messaging gateway, and native/web clients. The architecture prioritizes **AWS Free Tier compliance, security isolation, and strict data persistence models**.
+
+```text
+                               ┌─────────────────┐
+                               │  GitHub Actions │
+                               │  (CI/CD Runner) │
+                               └────────┬────────┘
+                                        │ (ECR Push / ECS Deploy)
+                                        ▼
+  ┌─────────────┐            ┌────────────────────┐
+  │ Next.js Web │            │  Amazon ECS Cluster │
+  │  (Vercel)   │            │  (Fargate Service) │
+  └──────┬──────┘            └──────────┬─────────┘
+         │                              │
+         └──────────────┬───────────────┘
+                        ▼
+             ┌────────────────────┐
+             │ Amazon API Gateway ├──────────────┐
+             │    (WebSockets)    │              │
+             └──────────┬─────────┘              ▼
+                        │             ┌────────────────────┐
+                        │             │     AWS Lambda     │
+                        │             │  (Connection Mgr)  │
+                        ▼             └──────────┬─────────┘
+             ┌────────────────────┐              │
+             │   Amazon Cognito   │              │
+             │ (JWT Verification) │              │
+             └──────────┬─────────┘              │
+                        │                        │
+                        ▼                        │
+             ┌────────────────────┐              │
+             │  Amazon DynamoDB   │◄─────────────┘
+             │(Single-Table Design)│
+             └──────────┬─────────┘
+                        │
+                        ▼
+             ┌────────────────────┐
+             │     Amazon S3      │
+             │ (Polly/Upload Cache)│
+             └────────────────────┘
+```
+
+---
+
+## 2. AWS Services Integration Details
+
+### 2.1 Amazon Cognito (Authentication)
+* **Purpose**: Manages user authentication, sign-ups, and session tokens.
+* **Security & JWT Verification**:
+  - The client (web/mobile) authenticates directly with the Cognito User Pool.
+  - On successful login, the client receives a JSON Web Token (JWT).
+  - High-privilege endpoints (e.g., `/api/circles/<id>/reports/<id>/resolve` for moderator actions) intercept this token in the `Authorization` header.
+  - The Flask backend ([auth.py](file:///f:/Programming%20Languages/React%20Native/projects/undertone/backend/app/auth.py)) cryptographically verifies the token's RS256 signature against Cognito's public JSON Web Key Sets (JWKS), validates claims (audience, issuer, expiration), and checks user access permissions.
+* **Privacy by Design**: The pool is configured to only collect `email` and `password`. It never records real names or PII; anonymous identity profile creation is handled separately in DynamoDB.
+
+### 2.2 Amazon DynamoDB (Database)
+* **Purpose**: Primary database storing profiles, Circles, posts, comments, votes, DMs, and connection states.
+* **Single-Table Design**:
+  - Eliminates relational database joins to ensure single-digit millisecond latency.
+  - Uses generic Partition Keys (`PK`) and Sort Keys (`SK`) with Global Secondary Indexes (`GSIs`) for diverse query routes:
+    - **GSI1**: Keyed on `GSI1-PK` and `GSI1-SK` to list all Circles or Circle posts.
+    - **GSI2**: Keyed on `GSI2-PK` and `GSI2-SK` to pull a user's chronological post history.
+* **Atomic Transactions (`transact_write_items`)**:
+  - Enforces **Circle name uniqueness** atomically across the database. Before writing a new Circle, it executes a conditional check on a lookup item (`CIRCLE_NAME#<normalized_name>`) within a transaction block. If the name is already taken (case-insensitive), the transaction fails, preventing duplicate creation.
+  - Automatically increments post `comment_count` using transactional atomic updates when a new comment is posted.
+
+### 2.3 Amazon S3 (Asset Storage & Voice Cache)
+* **Purpose**: Secure file uploads (images) and Polly audio file caching.
+* **Direct-to-S3 Uploads (Presigned URLs)**:
+  - Clients never upload file bytes through the Flask backend (avoiding server memory bottlenecks).
+  - Instead, the client requests a short-lived presigned PUT URL from the backend. The client uploads the file directly to S3 from the browser or mobile device.
+  - S3 buckets are configured with **blocked public access**; objects are accessed only via pre-signed GET URLs generated on-demand by the API.
+* **Polly Audio Caching**:
+  - Speech files generated by Amazon Polly are saved as MP3 files in S3 (`audio/<post_id>.mp3`). 
+  - Subsequent read-aloud requests check S3 first. If the file exists, the API returns the S3 URL directly, preventing duplicate calls to Polly and minimizing API billing.
+
+### 2.4 Amazon ECS & AWS Fargate (Serverless Container Orchestration)
+* **Purpose**: Hosts the backend Flask application in a production-ready, serverless container environment.
+* **Architecture**:
+  - The backend app is packaged into a Docker image and stored in **Amazon Elastic Container Registry (ECR)**.
+  - **Amazon ECS (Elastic Container Service)** runs the container using the **AWS Fargate** launch type (eliminating EC2 server maintenance).
+  - To minimize costs, no Application Load Balancer (ALB) is provisioned. Instead, Fargate tasks map directly to public IPs. Tasks scale based on memory/CPU parameters inside the task definition.
+
+### 2.5 Amazon API Gateway & AWS Lambda (Serverless WebSockets)
+* **Purpose**: Manages real-time message delivery (DMs) and live post/comment vote broadcasts.
+* **Implementation**:
+  - Handles persistent WebSocket connections (`$connect`, `$disconnect`, `$default` routes).
+  - **AWS Lambda** ([websocket_handler.py](file:///f:/Programming%20Languages/React%20Native/projects/undertone/infra/lambda/websocket_handler.py)) acts as the connection manager. It stores active connection IDs in a DynamoDB connection tracking entity (`CONN#<connection_id>`).
+  - When a user sends a DM, the Flask backend writes the message to DynamoDB and pushes a payload to the API Gateway Management API endpoint, which broadcasts the payload to the recipient's active WebSocket connection ID.
+
+### 2.6 Amazon Rekognition (AI Image Moderation)
+* **Purpose**: Automates image-based NSFW content moderation.
+* **Workflow**:
+  - When an image is uploaded, the Flask API triggers a background scan via Rekognition.
+  - If Rekognition identifies explicit or unsafe content, the post is flagged with `held_for_review: true` and hidden from public feeds.
+  - A moderation report is automatically generated under `system:rekognition` and queued for review in the Circle's moderator queue.
+
+### 2.7 Amazon Polly (AI Text-To-Speech Synthesis)
+* **Purpose**: Powering the "Read Aloud" narration system.
+* **Workflow**:
+  - Generates voice output for text posts on-demand.
+  - Integrates with S3 caching (described in section 2.3) to avoid redundant synthesis operations.
+
+---
+
+## 3. GitHub Actions CI/CD Pipelines
+
+Three separate GitHub Actions workflows automate the integration and deployment pipeline for the web client, mobile client, and backend.
+
+```text
+                    ┌──────────────────────────────┐
+                    │     Developer Pushes Code    │
+                    └──────────────┬───────────────┘
+                                   │
+         ┌─────────────────────────┼─────────────────────────┐
+         ▼                         ▼                         ▼
+  [ .github/workflows/ ]    [ .github/workflows/ ]    [ .github/workflows/ ]
+       backend.yml                 web.yml                  mobile.yml
+         │                         │                         │
+         ▼                         ▼                         ▼
+   Run Pytest suite          Lint & Type-check        Type-check code
+   (Moto AWS mocks)                │                         │
+         │                         ▼                         ▼
+         ▼                 Deploy to Vercel          Verify Metro Bundle
+    Docker Build                   │                         │
+         │                         │                         ▼
+         ▼                         │                  Build Release APK
+   Push ECR Registry               │                  (Gradle signed)
+         │                         │                         │
+         ▼                         │                         ▼
+   Update ECS Task &               │                 Upload Artifact:
+   Redeploy Fargate                │              undertone-release-apk
+         │                         │                         │
+         ▼                         ▼                         ▼
+    Backend Live!              Web Live!                 APK Ready!
+```
+
+### 3.1 Backend Deployment Workflow (`backend.yml`)
+* **Triggers**: On pushes to `main` involving paths inside `backend/**` or the backend workflow file.
+* **Pipeline Steps**:
+  1. **Checkout & Environment Setup**: Clones the repository and configures Python.
+  2. **Run Pytest Suite**: Executes all 67+ unit tests against a local mocked AWS environment (`moto`), verifying schema writes, voting algorithms, Polly caches, and Cognito signature checks.
+  3. **Docker Build & Push**:
+     - Authenticates with Amazon ECR using AWS credentials stored as GitHub Secrets.
+     - Builds the Flask container image using `backend/Dockerfile`.
+     - Tags the image with the specific GitHub commit SHA (for versioned deployments) and pushes it to ECR.
+  4. **Deploy to ECS**:
+     - Registers a new task definition revision containing the newly pushed image.
+     - Forces a deployment update on the ECS Fargate service, initiating a rolling update that spins up new containers before terminating old ones.
+
+### 3.2 Web Deployment Workflow (`web.yml`)
+* **Triggers**: On pushes to `main` involving paths inside `web/**`.
+* **Pipeline Steps**:
+  1. **Checkout & Node Setup**: Configures Node.js and installs project dependencies.
+  2. **Lint & Code Check**: Runs ESLint and checks TypeScript types (`tsc --noEmit`).
+  3. **Vercel Deploy**: Deploys the Next.js Server Components app to Vercel (saving container fees while keeping the API 100% AWS-hosted).
+
+### 3.3 Mobile Build Workflow (`mobile.yml`)
+* **Triggers**: On pushes to `main` involving paths inside `mobile/**` or the mobile workflow file.
+* **Pipeline Steps**:
+  1. **Type-Check**: Runs `npx tsc --noEmit` across all screens and navigation interfaces.
+  2. **Verify Metro Bundle**: Runs `npx expo export --platform android` to confirm all imports resolve and Metro can build the Hermes bytecode bundle.
+  3. **Build Standalone Release APK**:
+     - Configures Java 17 and setups Node.
+     - Runs `npx expo prebuild` to generate the native Android Gradle project.
+     - Runs `./gradlew assembleRelease` inside `mobile/android` to build the release APK.
+     - **Signing Config**: Uses the default debug signing key mapped to the release build configuration in the Gradle script, allowing the resulting production-optimized APK to be installed directly on physical devices for manual testing.
+  4. **Upload Artifact**: Uploads the compiled APK (`app-release.apk`) to GitHub Actions artifacts under the name `undertone-release-apk`.
+
+---
+
+## 4. Local Development & Test Automation
+
+To keep development free of charge, Undertone isolates cloud operations during local coding and automated testing.
+
+### 4.1 IaC Automation CLI (`infra/scripts/manage.py`)
+A unified command-line tool built using Python and the `boto3` SDK. It automates the full AWS infrastructure lifecycle:
+* **`python manage.py up`**: Automates ECR registry creation, Cognito User Pools creation, DynamoDB Single-Table provisioning with GSIs, S3 bucket generation with policies blocking public access, and ECS Fargate configuration.
+* **`python manage.py status`**: Checks the active status of ECS tasks, DynamoDB tables, and S3 buckets.
+* **`python manage.py down`**: Tears down all resources in `ap-south-1` to prevent unwanted AWS charges.
+
+### 4.2 Mocked Integration Testing (`moto`)
+- Every AWS service is mocked locally inside the backend test suite using the `moto` testing library.
+- When running `pytest`, `moto` intercepts all `boto3` calls (Cognito client connections, S3 bucket puts, Rekognition label detections, DynamoDB transactions, and Polly speech syntheses) and handles them in-memory.
+- This allows full backend integration testing without calling live AWS services, preventing latency, API costs, or security key exposure in the CI environment.
