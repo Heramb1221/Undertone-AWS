@@ -12,8 +12,8 @@ export function ThemeToggle() {
   }, [isLight]);
 
   return (
-    <Button variant="secondary" onClick={() => setIsLight(!isLight)}>
-      Switch to {isLight ? "dark" : "light"} mode
+    <Button variant="secondary" className="text-xs px-2.5 py-1" onClick={() => setIsLight(!isLight)}>
+      {isLight ? "Dark Mode" : "Light Mode"}
     </Button>
   );
 }

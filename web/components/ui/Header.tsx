@@ -7,6 +7,7 @@ import { getLocalIdentity, LocalIdentity } from "@/lib/localIdentity";
 import { signOut } from "@/lib/cognito";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Header() {
   const [identity, setIdentity] = useState<LocalIdentity | null>(null);
@@ -124,6 +125,7 @@ export function Header() {
               Messages
             </Button>
           </Link>
+          <ThemeToggle />
           <Button variant="secondary" className="text-xs px-2.5 py-1" onClick={handleLogout}>
             Log out
           </Button>
