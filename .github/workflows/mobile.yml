@@ -37,10 +37,10 @@ jobs:
 
   build-apk:
     # No EAS account needed — builds directly via Gradle in the runner, using
-    # `expo prebuild` to generate the native Android project. Produces a debug
-    # APK (self-signed automatically, installs fine for manual testing) rather
-    # than a release build, which would need real signing credentials as a
-    # secret — out of scope for "attach as artifact for manual testing."
+    # `expo prebuild` to generate the native Android project. Produces a release
+    # APK signed with the debug key (configured in android/app/build.gradle) so that
+    # the JS bundle is fully embedded, letting the app run standalone without
+    # needing a running Metro server.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: typecheck
     runs-on: ubuntu-latest
@@ -69,13 +69,13 @@ jobs:
           CI: 1
         run: npx expo prebuild --platform android
 
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: mobile/android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: undertone-debug-apk
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          name: undertone-release-apk
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 14
