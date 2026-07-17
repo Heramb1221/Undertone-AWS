@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "undertone",
+    "slug": "undertone",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#1C1815",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.undertone.app"
+    },
+    "android": {
+      "package": "com.undertone.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#1C1815",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "cognitoUserPoolId": "ap-south-1_eaJqFDMbi",
+      "cognitoClientId": "5gni8vpv8c2sqtb8ha1ak29rog",
+      "_comment": "apiUrl/cognitoUserPoolId/cognitoClientId: fill after manage.py up. wsUrl: fill after the WebSocket layer is deployed (Phase 11). eas.projectId: create a free project at expo.dev, needed only for push notifications (Phase 17) — run npx eas init.",
+      "apiUrl": "http://localhost:5000",
+      "eas": {
+        "projectId": "39ab5f02-4a0d-495c-b8bf-2162f3d77419"
+      },
+      "wsUrl": ""
+    }
+  }
+}
