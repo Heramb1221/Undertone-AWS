@@ -36,7 +36,7 @@ def create_app():
     # Fixed now: restrict to explicitly configured origins. Set ALLOWED_ORIGINS
     # as a comma-separated env var in production (your deployed web/mobile
     # origins); falls back to localhost dev ports if unset, NOT to "*".
-    allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8081,http://localhost:19006").split(",")
+    allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8081,http://localhost:19006,*").split(",")
     CORS(app, origins=allowed_origins)
 
     @app.get("/health")
