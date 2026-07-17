@@ -412,9 +412,9 @@ Undertone features a REST API + a WebSockets protocol for real-time messaging.
 
 | Screen | Description |
 |---|---|
-| <img width="1893" height="866" alt="Landing page" src="https://github.com/user-attachments/assets/00147449-90d7-44e1-b9c6-7a787d662611" /> | Anonymous Landing |
-| <img width="1895" height="867" alt="Dashboard" src="https://github.com/user-attachments/assets/2e0d33bc-446c-4ad5-bc82-df1e40fbf830" /> | Onboarding & Interests |
-| <img width="1898" height="867" alt="Editor" src="https://github.com/user-attachments/assets/3cd81292-9e60-4328-8d78-de3a9182555e" /> | Nested Chat Threads |
+| <img width="1917" height="863" alt="image" src="https://github.com/user-attachments/assets/fba40a29-b3be-4a1f-b8d3-72c30859fe78" /> | Home page |
+| <img width="1920" height="1378" alt="image" src="https://github.com/user-attachments/assets/2acff287-6f37-497c-a93d-603e797e5ae5" /> | Post and Comments |
+| <img width="1897" height="857" alt="image" src="https://github.com/user-attachments/assets/a417a585-2a8d-41c0-88c7-b536dbb667f4" /> | Nested Chat Threads |
 
 ---
 
