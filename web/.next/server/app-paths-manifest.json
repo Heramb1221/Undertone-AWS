@@ -1,7 +1,18 @@
 {
-  "/onboarding/page": "app/onboarding/page.js",
-  "/feed/page": "app/feed/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/generate-name/route": "app/api/generate-name/route.js",
+  "/circles/[id]/posts/[postId]/page": "app/circles/[id]/posts/[postId]/page.js",
+  "/circles/[id]/posts/new/page": "app/circles/[id]/posts/new/page.js",
+  "/circles/page": "app/circles/page.js",
+  "/circles/[id]/moderation/page": "app/circles/[id]/moderation/page.js",
+  "/dm/[userId]/page": "app/dm/[userId]/page.js",
+  "/dm/page": "app/dm/page.js",
   "/login/page": "app/login/page.js",
+  "/design-system/page": "app/design-system/page.js",
+  "/feed/page": "app/feed/page.js",
+  "/circles/[id]/page": "app/circles/[id]/page.js",
+  "/page": "app/page.js",
   "/profile/page": "app/profile/page.js",
-  "/dm/page": "app/dm/page.js"
+  "/onboarding/page": "app/onboarding/page.js",
+  "/circles/new/page": "app/circles/new/page.js"
 }
